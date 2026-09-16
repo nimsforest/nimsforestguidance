@@ -1,0 +1,8 @@
+/data/
+/bin/
+/nimsforestguidance
+*.db
+*.db-shm
+*.db-wal
+*.key
+node_modules/

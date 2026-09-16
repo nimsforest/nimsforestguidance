@@ -1,0 +1,42 @@
+name: Test and release
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.7'
+      - run: CGO_ENABLED=1 go test -race ./...
+      - run: go vet ./...
+      - run: node --check internal/web/static/app.js
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.7'
+      - name: Build
+        run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags "-s -w -X main.version=${GITHUB_REF_NAME}" -o nimsforestguidance ./cmd/nimsforestguidance
+      - name: Login with GitHub OIDC
+        run: |
+          registry_oidc=$(curl -sfH "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=registry.nimsforest.com" | jq -r '.value')
+          echo "::add-mask::$registry_oidc"
+          echo "$registry_oidc" | docker login registry.nimsforest.com -u oidc --password-stdin
+      - name: Publish
+        run: |
+          docker build -t registry.nimsforest.com/nimsforestguidance:${GITHUB_REF_NAME} .
+          docker push registry.nimsforest.com/nimsforestguidance:${GITHUB_REF_NAME}
