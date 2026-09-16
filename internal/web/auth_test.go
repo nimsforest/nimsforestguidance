@@ -19,7 +19,7 @@ func TestSSORequiresCurrentOrganizationMembership(t *testing.T) {
 		if r.URL.Path == "/api/me" {
 			w.Write([]byte(`{"user_id":"coo","name":"COO"}`))
 		} else if member {
-			w.Write([]byte(`[{"organization_slug":"test","is_admin":true}]`))
+			w.Write([]byte(`[{"organization_slug":"test","organization_name":"Test Organization","is_admin":true},{"organization_slug":"executxr","organization_name":"ExecutXR"},{"organization_slug":"thenaturalbeautyclub","organization_name":"The Natural Beauty Club"}]`))
 		} else {
 			w.Write([]byte(`[{"organization_slug":"other","is_admin":true}]`))
 		}
@@ -27,7 +27,11 @@ func TestSSORequiresCurrentOrganizationMembership(t *testing.T) {
 	defer id.Close()
 	a := NewAuthMiddleware(AuthConfig{IamNimURL: id.URL, BaseURL: "https://guidance.test.mynimsforest.com", OrgSlug: "test"})
 	h := a.Wrap(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !a.GetUser(r).IsAdmin {
+		u := a.GetUser(r)
+		if len(u.Memberships) != 3 || u.Memberships[1].Name != "ExecutXR" {
+			t.Error("live organization choices missing")
+		}
+		if !u.IsAdmin {
 			t.Error("admin role missing")
 		}
 		w.WriteHeader(200)
@@ -46,6 +50,9 @@ func TestSSORequiresCurrentOrganizationMembership(t *testing.T) {
 	}
 	if w := req("/?token=valid", false); w.Code != 303 || len(w.Result().Cookies()) == 0 {
 		t.Fatal("SSO callback failed")
+	}
+	if w := req("/new?token=valid", false); w.Code != 303 || w.Header().Get("Location") != "/new" {
+		t.Fatal("new forecast intent lost at SSO callback")
 	}
 	if req("/api/forecasts", true).Code != 200 {
 		t.Fatal("member denied")

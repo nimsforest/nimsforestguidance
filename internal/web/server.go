@@ -107,11 +107,13 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/v1/health", health)
 	files, _ := fs.Sub(assets, "static")
 	mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.FS(files))))
-	mux.HandleFunc("GET /{$}", func(w http.ResponseWriter, r *http.Request) {
+	page := func(w http.ResponseWriter, r *http.Request) {
 		b, _ := assets.ReadFile("static/index.html")
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.Write(b)
-	})
+	}
+	mux.HandleFunc("GET /{$}", page)
+	mux.HandleFunc("GET /new", page)
 	mux.HandleFunc("GET /api/session", func(w http.ResponseWriter, r *http.Request) {
 		u := s.user(r)
 		csrf := ""

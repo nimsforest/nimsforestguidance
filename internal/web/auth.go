@@ -18,11 +18,18 @@ type AuthConfig struct {
 	OrgSlug   string
 }
 
+type Membership struct {
+	Slug    string `json:"organization_slug"`
+	Name    string `json:"organization_name"`
+	IsAdmin bool   `json:"is_admin"`
+}
+
 type SessionUser struct {
-	UserID  string `json:"user_id"`
-	Email   string `json:"email"`
-	Name    string `json:"name"`
-	IsAdmin bool   `json:"-"`
+	Memberships []Membership `json:"memberships"`
+	UserID      string       `json:"user_id"`
+	Email       string       `json:"email"`
+	Name        string       `json:"name"`
+	IsAdmin     bool         `json:"-"`
 }
 
 type authUserKey struct{}
@@ -138,13 +145,11 @@ func (a *AuthMiddleware) validateToken(ctx context.Context, token string) (*Sess
 	if user.UserID == "" {
 		return nil, fmt.Errorf("missing identity")
 	}
-	var memberships []struct {
-		Slug    string `json:"organization_slug"`
-		IsAdmin bool   `json:"is_admin"`
-	}
+	var memberships []Membership
 	if err := fetch("/api/me/memberships", &memberships); err != nil {
 		return nil, err
 	}
+	user.Memberships = memberships
 	for _, m := range memberships {
 		if m.Slug == a.config.OrgSlug {
 			user.IsAdmin = m.IsAdmin
