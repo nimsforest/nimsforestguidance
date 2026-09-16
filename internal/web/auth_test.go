@@ -1,6 +1,7 @@
 package web
 
 import (
+	"github.com/nimsforest/nimsforestguidance/internal/guidance"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -83,5 +84,20 @@ func TestCSRFRequiresExactOrigin(t *testing.T) {
 	r.Header.Set("X-CSRF-Token", "other")
 	if s.csrf(r) {
 		t.Fatal("bad CSRF token accepted")
+	}
+}
+
+func TestWorkspaceMetadataDoesNotGrantMembership(t *testing.T) {
+	t.Setenv("GUIDANCE_WORKSPACES", `{"test":"Test Organization","executxr":"ExecutXR","not-a-member":"Other"}`)
+	s := &Server{Store: &guidance.Store{Org: "test"}}
+	out := s.workspaces(&SessionUser{Memberships: []Membership{{Slug: "test"}, {Slug: "executxr"}, {Slug: "pending"}}})
+	if len(out) != 2 || out["executxr"] != "ExecutXR" {
+		t.Fatalf("wrong accessible deployments: %v", out)
+	}
+	if _, ok := out["not-a-member"]; ok {
+		t.Fatal("deployment metadata expanded membership")
+	}
+	if _, ok := out["pending"]; ok {
+		t.Fatal("undeployed workspace advertised as ready")
 	}
 }

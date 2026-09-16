@@ -77,6 +77,22 @@ func (s *Server) validateOrigins(f guidance.Forecast) error {
 	return nil
 }
 
+// Deployment metadata describes availability, never membership or approval rights.
+func (s *Server) workspaces(u *SessionUser) map[string]string {
+	var deployed map[string]string
+	json.Unmarshal([]byte(os.Getenv("GUIDANCE_WORKSPACES")), &deployed)
+	out := map[string]string{}
+	for _, m := range u.Memberships {
+		if name, ok := deployed[m.Slug]; ok {
+			out[m.Slug] = name
+		}
+	}
+	if _, ok := out[s.Store.Org]; !ok {
+		out[s.Store.Org] = s.Store.Org
+	}
+	return out
+}
+
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 	health := tool.HealthHandler("nimsforestguidance", map[string]tool.Check{
@@ -124,7 +140,7 @@ func (s *Server) Handler() http.Handler {
 			csrf = guidance.NewID()
 			http.SetCookie(w, &http.Cookie{Name: "guidance_csrf", Value: csrf, Path: "/", Secure: !s.Dev, HttpOnly: true, SameSite: http.SameSiteStrictMode, MaxAge: 86400})
 		}
-		respond(w, 200, map[string]any{"user": u, "is_admin": u.IsAdmin, "org": s.Store.Org, "csrf": csrf, "version": "0.1.0"})
+		respond(w, 200, map[string]any{"user": u, "is_admin": u.IsAdmin, "org": s.Store.Org, "csrf": csrf, "version": "0.2.1", "workspaces": s.workspaces(u)})
 	})
 	mux.HandleFunc("GET /api/forecasts", func(w http.ResponseWriter, r *http.Request) {
 		v, e := s.Store.List()
