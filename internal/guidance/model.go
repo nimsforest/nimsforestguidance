@@ -150,7 +150,7 @@ func Validate(f Forecast, approving bool) error {
 	}
 	amounts := []int64{f.Restricted, f.Buffer}
 	if f.Opening != nil {
-		amounts = append(amounts, *f.Opening)
+		amounts = append(amounts, max(*f.Opening, -*f.Opening))
 	}
 	if f.Requested != nil {
 		amounts = append(amounts, *f.Requested)
@@ -163,7 +163,7 @@ func Validate(f Forecast, approving bool) error {
 			return errors.New("cash and funding amounts must be positive and within supported limits")
 		}
 	}
-	if f.Opening != nil && f.Restricted > *f.Opening {
+	if f.Opening != nil && f.Restricted > max(*f.Opening, int64(0)) {
 		return errors.New("restricted cash cannot exceed opening cash")
 	}
 	if f.OpeningStatus != "estimated" && f.OpeningStatus != "verified" {

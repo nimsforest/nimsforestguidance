@@ -223,7 +223,7 @@ func (s *Store) Apply(c Command) (Result, error) {
 					return errors.New("approval requires an organization administrator and a reviewed forecast")
 				}
 				f.Status = "approved"
-				f.ApprovedAt = time.Now().UTC().Format(time.RFC3339)
+				f.ApprovedAt = time.Now().UTC().Format(time.RFC3339Nano)
 				f.ApprovedBy = c.Actor
 			case "return":
 				if !c.CanApprove || f.Status == "approved" {
@@ -245,7 +245,7 @@ func (s *Store) Apply(c Command) (Result, error) {
 		r.Error = err.Error()
 	} else {
 		f.Revision++
-		f.UpdatedAt = time.Now().UTC().Format(time.RFC3339)
+		f.UpdatedAt = time.Now().UTC().Format(time.RFC3339Nano)
 		f.UpdatedBy = c.Actor
 		data, e := json.Marshal(f)
 		if e != nil {
@@ -266,7 +266,7 @@ func (s *Store) Apply(c Command) (Result, error) {
 	if _, e = tx.Exec(`INSERT INTO commands VALUES(?,?)`, c.Ref, string(data)); e != nil {
 		return r, e
 	}
-	event, _ := json.Marshal(map[string]any{"result": r, "org": s.Org, "action": c.Action, "actor": c.Actor, "at": time.Now().UTC().Format(time.RFC3339)})
+	event, _ := json.Marshal(map[string]any{"result": r, "org": s.Org, "action": c.Action, "actor": c.Actor, "at": time.Now().UTC().Format(time.RFC3339Nano)})
 	if _, e = tx.Exec(`INSERT INTO outbox(ref,data,river_sent) VALUES(?,?,?)`, c.Ref, string(event), r.Status != "applied"); e != nil {
 		return r, e
 	}
