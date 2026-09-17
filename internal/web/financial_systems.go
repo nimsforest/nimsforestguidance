@@ -32,6 +32,7 @@ type financialDesignations struct {
 	Org        string           `json:"organization"`
 	Cashflow   financialBinding `json:"cashflow"`
 	Accounting financialBinding `json:"accounting"`
+	Revenue    financialBinding `json:"revenue"`
 }
 type financialIntegration struct {
 	Type string          `json:"type"`
@@ -67,6 +68,7 @@ func (s *Server) financialSystems(w http.ResponseWriter, r *http.Request) {
 		{Key: "odoo", Name: "Odoo", Role: "Accounting records", Configuration: "Unavailable", ImportSupport: "Preview supported"},
 		{Key: "exact_online", Name: "Exact Online", Role: "Accounting records", Configuration: "Unavailable", ImportSupport: "Guidance preview not yet supported"},
 		{Key: "okioki", Name: "OkiOki", Role: "Supporting bank and accounting-document connector", Configuration: "Unavailable", ImportSupport: "Guidance preview not yet supported"},
+		{Key: "shopify", Name: "Shopify", Role: "Revenue source (orders and refunds)", Configuration: "Unavailable", ImportSupport: "Guidance preview not yet supported"},
 	}
 	var catalog tool.Catalog
 	var integrations []financialIntegration
@@ -143,7 +145,7 @@ func (s *Server) financialSystems(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 	wait.Wait()
-	keys := map[string]string{"ledger": "ledger", "nimsforestledger": "ledger", "odoo": "odoo", "nimsforestodoo": "odoo", "exact_online": "exact_online", "exactonline": "exact_online", "nimsforestexactonline": "exact_online", "okioki": "okioki", "nimsforestokioki": "okioki"}
+	keys := map[string]string{"shopify": "shopify", "ledger": "ledger", "nimsforestledger": "ledger", "odoo": "odoo", "nimsforestodoo": "odoo", "exact_online": "exact_online", "exactonline": "exact_online", "nimsforestexactonline": "exact_online", "okioki": "okioki", "nimsforestokioki": "okioki"}
 	if catalogOK {
 		for _, entry := range catalog.Tools {
 			if _, known := keys[entry.Key]; known {
@@ -155,6 +157,8 @@ func (s *Server) financialSystems(w http.ResponseWriter, r *http.Request) {
 					role = "Accounting records"
 				} else if assignment.Responsibility == "cashflow" {
 					role = "Cashflow records"
+				} else if assignment.Responsibility == "revenue" {
+					role = "Revenue source"
 				}
 			}
 			if role != "" {
@@ -196,10 +200,12 @@ func (s *Server) financialSystems(w http.ResponseWriter, r *http.Request) {
 		state = "Unavailable"
 	}
 	roles := []map[string]any{}
-	for _, role := range []string{"cashflow", "accounting"} {
+	for _, role := range []string{"cashflow", "accounting", "revenue"} {
 		binding := bindings.Cashflow
 		if role == "accounting" {
 			binding = bindings.Accounting
+		} else if role == "revenue" {
+			binding = bindings.Revenue
 		}
 		status := "Not set"
 		if err != nil {
@@ -246,6 +252,9 @@ func readFinancialBindings(integrations []financialIntegration, available bool, 
 		}
 		if out.Accounting.Provider != "" && !financialProviderKey.MatchString(out.Accounting.Provider) {
 			return financialDesignations{}, errors.New("unsupported accounting designation")
+		}
+		if out.Revenue.Provider != "" && !financialProviderKey.MatchString(out.Revenue.Provider) {
+			return financialDesignations{}, errors.New("unsupported revenue designation")
 		}
 	}
 	return out, nil

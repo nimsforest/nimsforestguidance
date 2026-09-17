@@ -83,10 +83,13 @@ func TestFinancialSystemsSeparateDesignationSetupAndAvailability(t *testing.T) {
 	if out["systems"].([]any)[1].(map[string]any)["status"] != "Not set" {
 		t.Fatal("connected Odoo silently became accounting authority")
 	}
-	integrationBody = `[{"type":"financial_systems","data":{"schema_version":1,"organization":"test","accounting":{"provider_key":"odoo","resource_ref":"company-17"}}}]`
+	integrationBody = `[{"type":"financial_systems","data":{"schema_version":1,"organization":"test","accounting":{"provider_key":"odoo","resource_ref":"company-17"},"revenue":{"provider_key":"shopify"}}}]`
 	out = read()
 	if out["systems"].([]any)[1].(map[string]any)["status"] != "Set" {
 		t.Fatal("explicit organization designation missing")
+	}
+	if out["systems"].([]any)[2].(map[string]any)["name"] != "Shopify" {
+		t.Fatal("explicit revenue designation missing")
 	}
 	sourceStatus = 500
 	out = read()
