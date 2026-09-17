@@ -130,6 +130,7 @@ func (s *Server) Handler() http.Handler {
 	}
 	mux.HandleFunc("GET /{$}", page)
 	mux.HandleFunc("GET /new", page)
+	mux.HandleFunc("GET /api/financial-systems", s.financialSystems)
 	mux.HandleFunc("GET /api/session", func(w http.ResponseWriter, r *http.Request) {
 		u := s.user(r)
 		csrf := ""

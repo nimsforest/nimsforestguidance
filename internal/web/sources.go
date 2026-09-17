@@ -17,6 +17,12 @@ import (
 	"github.com/nimsforest/nimsforestguidance/internal/guidance"
 )
 
+type sourceCredentialError struct{ Status int }
+
+func (e sourceCredentialError) Error() string {
+	return "source credential is not configured or accessible"
+}
+
 var sourceClient = &http.Client{Timeout: 15 * time.Second, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
 
 func setting(key, defaultValue string) string {
@@ -47,13 +53,21 @@ func (s *Server) sourceGET(ctx context.Context, source, path string, dst any) er
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		return fmt.Errorf("%s service connection not available (credential status %d); manual entry remains available", source, resp.StatusCode)
+		return sourceCredentialError{Status: resp.StatusCode}
 	}
 	var identity struct {
+		Land    string            `json:"land"`
+		Service string            `json:"service"`
 		Secrets map[string]string `json:"secrets"`
 	}
-	if json.NewDecoder(io.LimitReader(resp.Body, 1<<20)).Decode(&identity) != nil || identity.Secrets["api_token"] == "" {
-		return errors.New("source tool has no usable API credential")
+	if json.NewDecoder(io.LimitReader(resp.Body, 1<<20)).Decode(&identity) != nil {
+		return errors.New("source credential response unavailable")
+	}
+	if identity.Land != "" && identity.Land != s.Store.Org || identity.Service != "" && identity.Service != service {
+		return errors.New("source credential organization mismatch")
+	}
+	if identity.Secrets["api_token"] == "" {
+		return sourceCredentialError{Status: 404}
 	}
 	req, _ = http.NewRequestWithContext(ctx, "GET", strings.TrimRight(base, "/")+path, nil)
 	req.Header.Set("Authorization", "Bearer "+identity.Secrets["api_token"])
