@@ -142,7 +142,7 @@ func (s *Server) Handler() http.Handler {
 			csrf = guidance.NewID()
 			http.SetCookie(w, &http.Cookie{Name: "guidance_csrf", Value: csrf, Path: "/", Secure: !s.Dev, HttpOnly: true, SameSite: http.SameSiteStrictMode, MaxAge: 86400})
 		}
-		respond(w, 200, map[string]any{"user": u, "is_admin": u.IsAdmin, "org": s.Store.Org, "csrf": csrf, "version": "0.5.0", "workspaces": s.workspaces(u)})
+		respond(w, 200, map[string]any{"user": u, "is_admin": u.IsAdmin, "org": s.Store.Org, "csrf": csrf, "version": "0.5.1", "workspaces": s.workspaces(u)})
 	})
 	mux.HandleFunc("GET /api/forecasts", func(w http.ResponseWriter, r *http.Request) {
 		v, e := s.Store.List()
