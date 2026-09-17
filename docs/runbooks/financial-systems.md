@@ -8,9 +8,9 @@ Ledger and Odoo setup are verified with organization-scoped server-side source r
 
 ## Designation contract for the shared setup owner
 
-The tools/connector work does not yet publish explicit financial system-of-record designations. **Do not infer a designation from an installed tool, heartbeat, released assignment or successful import.** Until the shared owner records a designation, Guidance displays Not set while still reporting source setup. Configuration outages or mismatched orgs display Unavailable rather than Not set.
+Financial system-of-record choices are separate from the tool/connector catalog. The existing shared integration API stores user-confirmed organization choices; the ongoing setup work can publish or adapt those choices through its shared UI. **Do not infer a designation from an installed tool, heartbeat, released assignment or successful import.** Until the shared owner records a designation, Guidance displays Not set while still reporting source setup. Configuration outages or mismatched orgs display Unavailable rather than Not set.
 
-Guidance's read adapter supports this proposed optional organization integration metadata. The shared owner must agree/publish the contract and provide its authorized setup UI; this change does not add a separate Guidance setter or publish guessed values:
+Guidance's read adapter consumes this optional organization integration metadata. Operator bootstrap uses the existing authorized Mycelium integration API and preserves other roles. This change does not add a separate Guidance setter or publish guessed values; organization setup owns these choices:
 
 ```json
 {"type":"financial_systems","data":{"schema_version":1,"organization":"<attested-org>","cashflow":{"provider_key":"ledger","resource_ref":"<optional-resource>"},"accounting":{"provider_key":"odoo","resource_ref":"<optional-company>"},"revenue":{"provider_key":"shopify","resource_ref":"<optional-shop>"}}}
