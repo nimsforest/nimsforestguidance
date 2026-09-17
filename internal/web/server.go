@@ -131,6 +131,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /{$}", page)
 	mux.HandleFunc("GET /new", page)
 	mux.HandleFunc("GET /api/financial-systems", s.financialSystems)
+	mux.HandleFunc("GET /api/portfolio", s.portfolio)
 	mux.HandleFunc("GET /api/session", func(w http.ResponseWriter, r *http.Request) {
 		u := s.user(r)
 		csrf := ""
@@ -141,7 +142,7 @@ func (s *Server) Handler() http.Handler {
 			csrf = guidance.NewID()
 			http.SetCookie(w, &http.Cookie{Name: "guidance_csrf", Value: csrf, Path: "/", Secure: !s.Dev, HttpOnly: true, SameSite: http.SameSiteStrictMode, MaxAge: 86400})
 		}
-		respond(w, 200, map[string]any{"user": u, "is_admin": u.IsAdmin, "org": s.Store.Org, "csrf": csrf, "version": "0.4.0", "workspaces": s.workspaces(u)})
+		respond(w, 200, map[string]any{"user": u, "is_admin": u.IsAdmin, "org": s.Store.Org, "csrf": csrf, "version": "0.5.0", "workspaces": s.workspaces(u)})
 	})
 	mux.HandleFunc("GET /api/forecasts", func(w http.ResponseWriter, r *http.Request) {
 		v, e := s.Store.List()
